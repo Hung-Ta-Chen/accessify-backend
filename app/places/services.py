@@ -1,5 +1,6 @@
 from .models import Place, Review
 from app import db
+from sqlalchemy import func
 
 
 def get_all_places():
@@ -69,3 +70,19 @@ def add_review_to_place(place_id, data):
         db.session.commit()
         return new_review
     return None
+
+
+def calculate_stats(place_id):
+    place = Place.query.filter_by(place_id=place_id).first()
+    if not place:
+        return None
+
+    # Ensure that the statistics are calculated only for the specified place
+    reviews = Review.query.filter_by(place_id=place.id)
+    stats = {
+        'average_wheelchair_access_rating': reviews.with_entities(func.avg(Review.wheelchair_rating)).scalar(),
+        'average_restroom_rating': reviews.with_entities(func.avg(Review.restroom_rating)).scalar(),
+        'average_overall_rating': reviews.with_entities(func.avg(Review.overall_rating)).scalar(),
+        'user_review_count': reviews.count(),
+    }
+    return stats

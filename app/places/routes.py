@@ -62,3 +62,11 @@ def post_review(place_id):
         return jsonify(new_review.to_dict()), 201
     else:
         abort(404, description=f"No place matches place_id={place_id}.")
+
+
+@review_blueprint.route('/places/<place_id>/stats', methods=['GET'])
+def get_place_stats(place_id):
+    stats = calculate_stats(place_id)
+    if stats is None:
+        abort(404, description=f"No place found with place_id {place_id}.")
+    return jsonify(stats), 200
