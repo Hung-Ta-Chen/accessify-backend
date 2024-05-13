@@ -1,19 +1,27 @@
-# Base class for configuraton
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+
 class Config:
-    SECRET_KEY = '9LDKjHtQCU-jUjvhMbNUXA'
-    
+    '''Base class for configuraton'''
+    SECRET_KEY = os.getenv('SECRET_KEY')
+
     # DB settings
-    SQLALCHEMY_DATABASE_URI = 'postgresql://chen0121:bleach54276@localhost/accessify_db'
+    SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    MONGO_URI = 'mongodb://localhost:27017/yourmongodbname'
-    
-    PINECONE_API_KEY = 'your_pinecone_api_key_here'
-    PINECONE_INDEX_URL = 'https://your-index-name.svc.your-region.pinecone.io'
+
+    MONGO_URI = os.getenv('MONGO_URI')
+
+    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+    PINECONE_INDEX_URL = os.getenv('PINECONE_INDEX_URL')
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
-  
+
+
 config = {
     'development': DevelopmentConfig,
     'default': DevelopmentConfig
