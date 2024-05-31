@@ -77,13 +77,14 @@ def get_messages(conversation_id):
     return list(db.messages.find({"conversation_id": conversation_id}).sort("timestamp", 1))
 
 
-def log_query(session_id, query, response):
+def log_query(session_id, query, response, query_type):
     """Log a user query and response."""
     log_entry = {
         "session_id": session_id,
         "query": query,
         "response": response,
-        "timestamp": datetime.now()
+        "timestamp": datetime.now(),
+        "query_type": query_type
     }
     return db.user_queries_log.insert_one(log_entry).inserted_id
 
