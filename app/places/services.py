@@ -23,7 +23,7 @@ def create_place(data):
                       )
     db.session.add(new_place)
     db.session.commit()
-    return new_place
+    return new_place.place_id
 
 
 def update_place(place_id, data):
@@ -77,8 +77,8 @@ def calculate_stats(place_id):
     if not place:
         return None
 
-    # Ensure that the statistics are calculated only for the specified place
     reviews = Review.query.filter_by(place_id=place.id)
+    # Calculate stats of reviews
     stats = {
         'average_wheelchair_access_rating': reviews.with_entities(func.avg(Review.wheelchair_rating)).scalar(),
         'average_restroom_rating': reviews.with_entities(func.avg(Review.restroom_rating)).scalar(),
