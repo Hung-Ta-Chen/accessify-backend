@@ -23,7 +23,7 @@ def create_place(data):
                       )
     db.session.add(new_place)
     db.session.commit()
-    return new_place.place_id
+    return new_place
 
 
 def update_place(place_id, data):
