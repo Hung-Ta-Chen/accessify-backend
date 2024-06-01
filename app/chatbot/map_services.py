@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import googlemaps
 from datetime import datetime
+from flask import current_app
 
 load_dotenv()
 
@@ -37,10 +38,12 @@ def fetch_place_details(place_name):
     return details
 
 
-def fetch_vicinity_details(location, radius=1000, service_type='restaurant', k=20):
+def fetch_vicinity_details(location, radius=10000, service_type='restaurant', k=20):
+    current_app.logger.info(
+        f'location: {location}, service_type={service_type}')
     # Perform a nearby search for each type of service
     places_result = gmaps.places_nearby(
-        location=location, radius=radius, type=service_type)
+        location=location, radius=10000, type=service_type)
 
     places = []
     for place in places_result.get('results', []):
@@ -55,3 +58,12 @@ def fetch_vicinity_details(location, radius=1000, service_type='restaurant', k=2
         })
 
     return places[:k]
+
+
+def geocode(place_name):
+    geocode_result = gmaps.geocode(place_name)
+
+    if not geocode_result:
+        return None  # No geocode results
+    location = geocode_result[0]['geometry']['location']
+    return (location['lat'], location['lng'])

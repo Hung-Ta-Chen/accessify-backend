@@ -5,6 +5,7 @@ from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 import os
 import json
+from flask import current_app
 from .db_services import get_all_query_logs
 from .map_services import *
 
@@ -13,9 +14,10 @@ load_dotenv()
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 embedder = OpenAIEmbeddings(
-    api_key="your_openai_api_key", model="text-embedding-3-large")
+    api_key=OPENAI_API_KEY, model="text-embedding-3-large")
 
-llm = OpenAI(model_name="gpt-3.5-turbo", openai_api_key=OPENAI_API_KEY)
+llm = OpenAI(model_name="gpt-3.5-turbo-instruct",
+             openai_api_key=OPENAI_API_KEY)
 
 
 def find_similar_queries(query, k=5):
@@ -39,15 +41,16 @@ def classify_query(query):
     prompt = f"""
     Please analyze the following user query, classify it into one of three categories: 'place_details', 'local_services', or 'general'. Extract relevant details based on the category and return the information in the following JSON structure:
     - For 'place_details': {{ "query_type": "place_details", "details": {{ "place_name": "<name of the place>" }} }}
-    - For 'local_services': {{ "query_type": "local_services", "details": {{ "service_type": "<type of service (one of restaurant, park, parking, or hospital>" }} }}
+    - For 'local_services': {{ "query_type": "local_services", "details": {{ "service_type": "<type of service (one of restaurant, park, parking, or hospital)>", "place_name": "CURRENT_LOCATION" if referring to the user's current location, otherwise the specific place name. }} }}
     - For general inquiries (any other inquiries that do not fall into the above categories): {{ "query_type": "general", "details": {{ }} }}
     Based on this user input: '{query}'
     """
-    response = llm.generate(prompt)
+    response = llm(prompt)
+    current_app.logger.info(f'classify result: {response}')
     return response
 
 
-def get_query_response(query, context):
+def get_query_response(query, context, lat, lng):
     # Classy the query first
     type_details_json = classify_query(query)
     type_details = json.loads(type_details_json)
@@ -67,7 +70,16 @@ def get_query_response(query, context):
             query=query, context=context, details=place_details, place_name=place_name)
     elif type_details['query_type'] == 'local_services':
         service_type = type_details["details"]["service_type"]
-        vicinity_details = fetch_vicinity_details(service_type)
+        place_name = type_details["details"]["place_name"]
+        if place_name == "CURRENT_LOCATION":
+            place_location = f"{lat},{lng}"
+        else:
+            location = geocode(place_name)
+            if location:
+                place_location = f"{location[0]},{location[1]}"
+            else:
+                place_location = f"51.512608,-0.219139"
+        vicinity_details = fetch_vicinity_details(place_location, service_type)
         prompt = PromptTemplate.from_template(
             "You are an AI specialized in providing information about local services." +
             "User asks: '{query}'." +

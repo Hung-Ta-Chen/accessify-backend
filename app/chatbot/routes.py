@@ -37,10 +37,30 @@ def end_conversation_route():
 @chatbot_blueprint.route('/message/send', methods=['POST'])
 def send_message():
     conversation_id = request.json.get('conversation_id')
+    session_id = request.json.get('session_id')
     text = request.json.get('text')
-    sender = request.json.get('sender')
-    message_id = add_message(conversation_id, text, sender)
-    return jsonify({"message_id": str(message_id)})
+    context = request.json.get('context', '')
+    lat = request.json.get('lat', 0)
+    lng = request.json.get('lng', 0)
+    message_id = add_message(conversation_id, text, 'user')
+
+    # Send the query to AI
+    response_text = get_query_response(text, context, lat, lng)
+    log_query(session_id, text, response_text)
+
+    ai_message_id = add_message(conversation_id, response_text, "ai")
+    return jsonify({
+        "user_message": {
+            "id": str(message_id),
+            "text": text,
+            "sender": 'user'
+        },
+        "ai_response": {
+            "id": str(ai_message_id),
+            "text": response_text,
+            "sender": "ai"
+        }
+    })
 
 
 @chatbot_blueprint.route('/message/get', methods=['GET'])
@@ -48,14 +68,3 @@ def get_messages_route():
     conversation_id = request.args.get('conversation_id')
     messages = get_messages(conversation_id)
     return jsonify({"messages": messages})
-
-
-@chatbot_blueprint.route('/query', methods=['POST'])
-def handle_query():
-    session_id = request.json.get('session_id')
-    user_input = request.json.get('query')
-    context = request.json.get('context', '')
-
-    response = get_query_response(user_input, context)
-    log_query(session_id, user_input, response, 'query_type')
-    return jsonify({"response": response})
