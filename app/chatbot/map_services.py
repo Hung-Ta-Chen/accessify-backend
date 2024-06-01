@@ -37,27 +37,21 @@ def fetch_place_details(place_name):
     return details
 
 
-def fetch_vicinity_details(location, radius=1000, service_types=None):
-    if service_types is None:
-        service_types = ['restaurant']
+def fetch_vicinity_details(location, radius=1000, service_type='restaurant', k=20):
+    # Perform a nearby search for each type of service
+    places_result = gmaps.places_nearby(
+        location=location, radius=radius, type=service_type)
 
-    all_places = {}
-    for service_type in service_types:
-        # Perform a nearby search for each type of service
-        places_result = gmaps.places_nearby(
-            location=location, radius=radius, type=service_type)
+    places = []
+    for place in places_result.get('results', []):
+        places.append({
+            "name": place.get('name'),
+            "address": place.get('vicinity'),
+            "rating": place.get('rating', -1),
+            "place_id": place.get('place_id'),
+            "url": place.get('url', "No URL available"),
+            "open_now": place.get('opening_hours', {}).get('open_now', False),
+            "permanently_closed": place.get('permanently_closed', False)
+        })
 
-        places = []
-        for place in places_result.get('results', []):
-            places.append({
-                "name": place.get('name'),
-                "address": place.get('vicinity'),
-                "rating": place.get('rating', -1),
-                "place_id": place.get('place_id'),
-                "url": place.get('url', "No URL available"),
-                "open_now": place.get('opening_hours', {}).get('open_now', False),
-                "permanently_closed": place.get('permanently_closed', False)
-            })
-        all_places[service_type] = places
-
-    return all_places
+    return places[:k]
